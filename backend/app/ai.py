@@ -65,9 +65,37 @@ class AIError(Exception):
     pass
 
 
+# Google retires model names over time; if the configured one is gone (404), fall back in order.
+TEXT_FALLBACKS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"]
+EMBED_FALLBACKS = ["gemini-embedding-001", "gemini-embedding-2-preview"]
+
+
 def _client():
     from google import genai
     return genai.Client(api_key=get_settings().gemini_api_key)
+
+
+def _candidates(primary: str, fallbacks: list[str]) -> list[str]:
+    return [primary] + [m for m in fallbacks if m != primary]
+
+
+def _call(models: list[str], fn):
+    """Run fn(model) on the first model that exists. Any Gemini API failure becomes a readable AIError."""
+    from google.genai import errors
+    last = None
+    for model in models:
+        try:
+            return fn(model), model
+        except errors.APIError as e:
+            last = e
+            if e.code == 404:
+                continue
+            if e.code == 429:
+                raise AIError("The AI is busy (free-tier rate limit). Wait a minute and try again.") from e
+            if e.code in (400, 401, 403):
+                raise AIError(f"Gemini rejected the request ({e.code}). Check GEMINI_API_KEY on the server.") from e
+            raise AIError(f"Gemini error {e.code}: {e.message}") from e
+    raise AIError(f"No available Gemini model ({', '.join(models)}): {last}")
 
 
 def _strip_fences(text: str) -> str:
@@ -87,12 +115,14 @@ def generate_lesson(notes: str) -> tuple[Lesson, str]:
 
     client, last_error = _client(), None
     prompt = LESSON_PROMPT.format(notes=notes[:15000])
+    models = _candidates(s.gemini_model, TEXT_FALLBACKS)
     for _ in range(MAX_TRIES):
+        resp, model = _call(models, lambda m: client.models.generate_content(
+            model=m, contents=prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.6)))
+        models = [model]  # stick with the model that worked
         try:
-            resp = client.models.generate_content(
-                model=s.gemini_model, contents=prompt,
-                config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.6))
-            return parse_lesson(resp.text), s.gemini_model
+            return parse_lesson(resp.text), model
         except (ValidationError, ValueError, TypeError) as e:
             last_error = e
     raise AIError(f"The AI could not produce a valid lesson after {MAX_TRIES} tries: {last_error}")
@@ -104,8 +134,9 @@ def transcribe(data: bytes, mime: str) -> str:
     if not s.ai_enabled:
         raise AIError("Reading photos and scanned PDFs needs GEMINI_API_KEY. Upload text, Word or a text PDF.")
     from google.genai import types
-    resp = _client().models.generate_content(
-        model=s.gemini_model, contents=[TRANSCRIBE_PROMPT, types.Part.from_bytes(data=data, mime_type=mime)])
+    client = _client()
+    resp, _ = _call(_candidates(s.gemini_model, TEXT_FALLBACKS), lambda m: client.models.generate_content(
+        model=m, contents=[TRANSCRIBE_PROMPT, types.Part.from_bytes(data=data, mime_type=mime)]))
     return (resp.text or "").strip()
 
 
@@ -124,11 +155,14 @@ def embed(texts: list[str], task: str = "RETRIEVAL_DOCUMENT") -> list[list[float
     if not s.ai_enabled:
         return [_hash_embed(t) for t in texts]
     from google.genai import types
-    out: list[list[float]] = []
+    client, out = _client(), []
+    models = _candidates(s.gemini_embed_model, EMBED_FALLBACKS)
     for i in range(0, len(texts), 50):
-        resp = _client().models.embed_content(
-            model=s.gemini_embed_model, contents=texts[i:i + 50],
-            config=types.EmbedContentConfig(task_type=task, output_dimensionality=EMBED_DIM))
+        batch = texts[i:i + 50]
+        resp, model = _call(models, lambda m: client.models.embed_content(
+            model=m, contents=batch,
+            config=types.EmbedContentConfig(task_type=task, output_dimensionality=EMBED_DIM)))
+        models = [model]
         for e in resp.embeddings:
             norm = math.sqrt(sum(v * v for v in e.values)) or 1.0  # truncated dims need re-normalising
             out.append([v / norm for v in e.values])
@@ -142,8 +176,9 @@ def answer(question: str, excerpts: list[str]) -> str:
     if not s.ai_enabled:
         return f"(Demo mode — no AI key.) The most relevant part of the notes says: “{excerpts[0][:300]}” [1]"
     context = "\n".join(f"[{i + 1}] {t}" for i, t in enumerate(excerpts))
-    resp = _client().models.generate_content(
-        model=s.gemini_model, contents=ANSWER_PROMPT.format(context=context, question=question))
+    client = _client()
+    resp, _ = _call(_candidates(s.gemini_model, TEXT_FALLBACKS), lambda m: client.models.generate_content(
+        model=m, contents=ANSWER_PROMPT.format(context=context, question=question)))
     return (resp.text or "").strip()
 
 

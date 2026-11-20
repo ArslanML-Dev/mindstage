@@ -9,7 +9,7 @@ A teacher uploads notes (PDF, Word, text, or a photo). Gemini turns them into a 
 ```
  Next.js 16 (Vercel)                FastAPI (Docker on Render)              PostgreSQL 16 + pgvector
  ───────────────────                ──────────────────────────              ────────────────────────
- /teach  teacher console  ──REST──▶ POST /classrooms/{code}/lesson  ──▶ Gemini 2.5 Flash → validated JSON lesson
+ /teach  teacher console  ──REST──▶ POST /classrooms/{code}/lesson  ──▶ Gemini 3.8 Flash → validated JSON lesson
                                      │ chunk notes → Gemini embeddings ──▶ note_chunks (vector(768), HNSW)
  /class  student view     ──REST──▶ POST /classrooms/{code}/ask    ──▶ top-4 cosine search → grounded answer
          ▲     │                     │
@@ -20,7 +20,7 @@ A teacher uploads notes (PDF, Word, text, or a photo). Gemini turns them into a 
 |---|---|
 | Backend | Python 3.12, FastAPI, WebSockets, Pydantic v2, SQLAlchemy 2, Alembic |
 | Data | PostgreSQL 16 + pgvector (HNSW cosine index) |
-| AI | Google Gemini (`gemini-2.5-flash`, `gemini-embedding-001` at 768 dims) |
+| AI | Google Gemini (`gemini-3.8-flash`, `gemini-embedding-001` at 768 dims) |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4 |
 | DevOps | Docker, GitHub Actions CI (pytest against a real pgvector service, Docker build, Next build) |
 

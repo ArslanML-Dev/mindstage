@@ -54,3 +54,22 @@ def test_chunks_overlap():
     assert len(chunks) == 3
     assert chunks[1].split()[0] == "w90"  # second window starts 90 words in
     assert chunks[-1].split()[-1] == "w299"
+
+
+def test_retired_model_falls_back_and_errors_are_readable():
+    import pytest
+    from google.genai import errors
+    from app import ai
+
+    def gone(model):
+        if model == "old-model":
+            raise errors.APIError(404, {"error": {"code": 404, "message": "gone", "status": "NOT_FOUND"}})
+        return f"ok:{model}"
+
+    assert ai._call(["old-model", "new-model"], gone) == ("ok:new-model", "new-model")
+
+    def limited(model):
+        raise errors.APIError(429, {"error": {"code": 429, "message": "quota", "status": "RESOURCE_EXHAUSTED"}})
+
+    with pytest.raises(ai.AIError, match="rate limit"):
+        ai._call(["m"], limited)

@@ -110,7 +110,10 @@ async def ask(code: str, body: AskIn):
             db.commit()
             return room.code, AskOut(answer=text, sources=sources)
 
-    room_code, out = await run_in_threadpool(work)
+    try:
+        room_code, out = await run_in_threadpool(work)
+    except ai.AIError as e:
+        raise HTTPException(502, str(e)) from e
     await hub.to_teachers(room_code, {"type": "doubt", "student": body.student, "question": body.question,
                                       "answer": out.answer})
     return out

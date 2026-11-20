@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://postgres@localhost:5432/mindstage"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.8-flash"
     gemini_embed_model: str = "gemini-embedding-001"
     cors_origins: str = "*"  # comma-separated list, e.g. https://mindstage.vercel.app
 
