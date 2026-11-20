@@ -3,8 +3,8 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MindStage — The Classroom That Becomes Anything",
-  description: "AI turns a teacher's notes into a live, cinematic lesson synced to every student's screen.",
+  title: "MindStage — AI classroom platform",
+  description: "Turn teacher notes into live visual lessons synced to every student, with quizzes and doubts answered from the notes.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

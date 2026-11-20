@@ -11,11 +11,11 @@ export default function Home() {
   return (
     <div className="space-y-16 py-6">
       <section className="max-w-3xl">
-        <p className="text-xs uppercase tracking-[0.3em] text-gold">Education Cinema</p>
-        <h1 className="mt-4 font-display text-5xl leading-tight sm:text-6xl">The classroom that becomes anything.</h1>
+        <p className="text-xs uppercase tracking-[0.3em] text-gold">AI classroom platform</p>
+        <h1 className="mt-4 font-display text-5xl leading-tight sm:text-6xl">Your notes, taught live on every student&apos;s screen.</h1>
         <p className="mt-6 text-lg text-mist">
-          MindStage turns a teacher&apos;s notes into a live, visual lesson on every student&apos;s screen — so students
-          spend the class understanding instead of copying.
+          Upload notes and MindStage builds a visual lesson with checkpoint quizzes, keeps every student on the same
+          scene in real time, shows you who understood, and answers doubts only from your own notes.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/teach" className="rounded-full bg-gold px-6 py-3 font-semibold text-ink hover:brightness-110">
