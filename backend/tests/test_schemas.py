@@ -73,3 +73,15 @@ def test_retired_model_falls_back_and_errors_are_readable():
 
     with pytest.raises(ai.AIError, match="rate limit"):
         ai._call(["m"], limited)
+
+
+def test_overloaded_model_falls_back():
+    from google.genai import errors
+    from app import ai
+
+    def busy(model):
+        if model == "busy":
+            raise errors.APIError(503, {"error": {"code": 503, "message": "high demand", "status": "UNAVAILABLE"}})
+        return "ok"
+
+    assert ai._call(["busy", "calm"], busy) == ("ok", "calm")

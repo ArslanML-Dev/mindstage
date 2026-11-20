@@ -80,7 +80,7 @@ def _candidates(primary: str, fallbacks: list[str]) -> list[str]:
 
 
 def _call(models: list[str], fn):
-    """Run fn(model) on the first model that exists. Any Gemini API failure becomes a readable AIError."""
+    """Run fn(model) on the first model that exists and isn't overloaded. Any Gemini API failure becomes a readable AIError."""
     from google.genai import errors
     last = None
     for model in models:
@@ -88,13 +88,15 @@ def _call(models: list[str], fn):
             return fn(model), model
         except errors.APIError as e:
             last = e
-            if e.code == 404:
+            if e.code in (404, 500, 503, 504):  # retired or overloaded: try the next model
                 continue
             if e.code == 429:
                 raise AIError("The AI is busy (free-tier rate limit). Wait a minute and try again.") from e
             if e.code in (400, 401, 403):
                 raise AIError(f"Gemini rejected the request ({e.code}). Check GEMINI_API_KEY on the server.") from e
             raise AIError(f"Gemini error {e.code}: {e.message}") from e
+    if last is not None and last.code != 404:
+        raise AIError("Gemini is overloaded right now. Wait a few seconds and click again.") from last
     raise AIError(f"No available Gemini model ({', '.join(models)}): {last}")
 
 
