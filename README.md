@@ -2,7 +2,19 @@
 
 **An AI classroom that turns a teacher's notes into a live, visual lesson.**
 
+**Live:** https://mindstage-ai.vercel.app
+
 A teacher uploads notes (PDF, Word, text, or a photo). Gemini turns them into a short lesson of scenes, each with a story, an analogy, an interactive visual (flowchart, chart, slider or key facts) and checkpoint questions. Students join with a 6-letter code and follow the teacher's screen live over WebSockets. Their answers come back to the teacher as a live chart, and their doubts are answered only from the teacher's own notes (RAG with pgvector), with the source passages shown.
+
+## Why this matters
+
+I built MindStage because I lived the problem as a student: the classroom has barely changed in a century. One teacher talks, a board fills up, and students spend the class copying instead of understanding.
+
+The research is clear that this format costs students:
+
+- A meta-analysis of **225 studies** of undergraduate STEM teaching found that students in traditional lecture courses were **1.5 times more likely to fail** than students in courses with active learning (average failure rate **34% vs 22%**), and exam scores improved by about **6%** with active learning. ([Freeman et al., *PNAS*, 2014](https://doi.org/10.1073/pnas.1319030111))
+
+MindStage turns any lecture into active learning without asking teachers to redesign their course: their own notes become visual scenes, live checkpoint questions and a doubt-solver grounded in those notes, and the teacher sees in real time who understood.
 
 ## Architecture
 
